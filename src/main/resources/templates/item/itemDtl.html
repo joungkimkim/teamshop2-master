@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/layout1}">
+<head>
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+</head>
+<th:block layout:fragment="script">
+    <script th:inline="javascript">
+        $(document).ready(function(){
+           calculateTotalPrice();
+
+           $("#count").change(function(){
+               calculateTotalPrice();
+           });
+        });
+
+        function calculateTotalPrice(){
+           var count = $("#count").val();
+           var price = $("#price").val();
+           var totalPrice = price * count;
+           $("#totalPrice").html(totalPrice + '원');
+        }
+
+        function order(){
+            var token = $("meta[name='_csrf']").attr("content");
+            var header = $("meta[name='_csrf_header']").attr("content");
+
+            var url = "/order";
+            var paramData = {
+                itemId : $("#itemId").val(),
+                count : $("#count").val()
+            }
+
+            var param = JSON.stringify(paramData);
+
+            $.ajax({
+                url : url,
+                type : "POST",
+                contentType : "application/json",
+                data : param,
+                beforeSend : function(xhr){
+                    /*데이터 전송하기 전에 헤더이 csrf 값을 설정*/
+                    xhr.setRequestHeader(header, token);
+                },
+                dataType : "json",
+                cache : false,
+                success : function(result, status){
+                    alert("주문이 완료 되었습니다.");
+                    location.href='/';
+                },
+                error : function(jqXHR, status, error){
+                    if(jqXHR.status == '401'){
+                        alert('로그인 후 이용해주세요.');
+                        location.href='/members/login';
+                    }else{
+                        alert(jqXHR.responseText);
+                    }
+                }
+            });
+        }
+
+        function addCart(){
+            var token = $("meta[name='_csrf']").attr("content");
+            var header = $("meta[name='_csrf_header']").attr("content");
+
+            var url = "/cart";
+
+            var paramData = {
+                itemId : $("#itemId").val(),
+                count : $("#count").val()
+            };
+            var param = JSON.stringify(paramData);
+
+            $.ajax({
+                url : url,
+                type : "POST",
+                contentType : "application/json",
+                data : param,
+                beforeSend : function(xhr){
+                    /*데이터 전송하기 전에 헤더이 csrf 값을 설정*/
+                    xhr.setRequestHeader(header, token);
+                },
+                dataType : "json",
+                cache : false,
+                success : function(result, status){
+                    alert("상품을 장바구니에 담았습니다.");
+                    location.href='/';
+                },
+                error : function(jqXHR, status, error){
+                    if(jqXHR.status == '401'){
+                        alert('로그인 후 이용해주세요.');
+                        location.href='/members/login';
+                    }else{
+                        alert(jqXHR.responseText);
+                    }
+                }
+            });
+        }
+
+<!--        // 카카오결제
+        $(function(){
+            $("#btn-kakao-pay").click(function(){
+                // 필수입력값을 확인.
+                var name = $("#form-payment input[name='pay-name']").val();
+                var tel = $("#form-payment input[name='pay-tel']").val();
+                var email = $("#form-payment input[name='pay-email']").val();
+
+                if(name == ""){
+                    $("#form-payment input[name='pay-name']").focus()
+                }
+                if(tel == ""){
+                    $("#form-payment input[name='pay-tel']").focus()
+                }
+                if(email == ""){
+                    $("#form-payment input[name='pay-email']").focus()
+                }
+                // 결제 정보를 form에 저장한다.
+                let totalPayPrice = parseInt($("#total-pay-price").text().replace(/,/g,''))
+                let totalPrice = parseInt($("#total-price").text().replace(/,/g,''))
+                let discountPrice = totalPrice - totalPayPrice
+                let usePoint = $("#point-use").val()
+                let useUserCouponNo = $(":radio[name='userCoupon']:checked").val()
+
+                // 카카오페이 결제전송
+                $.ajax({
+                    type:'get',
+                    url:'/orderKakao/pay',
+                    data:{
+                        total_amount: totalPayPrice,
+                        payUserName: name,
+                        sumPrice:totalPrice,
+                        discountPrice:discountPrice,
+                        totalPrice:totalPayPrice,
+                        tel:tel,
+                        email:email,
+                        usePoint:usePoint,
+                        useCouponNo:useUserCouponNo,
+                    },
+                    success:function(response){
+                        location.href = response.next_redirect_pc_url;
+                    }
+                })
+            })
+        })
+        -->
+    </script>
+</th:block>
+<!-- 사용자 CSS 추가 -->
+<th:block layout:fragment="css">
+    <style>
+        .mgb-15{
+            margin-bottom:15px;
+        }
+        .mgt-30{
+            margin-top:30px;
+        }
+        .mgt-50{
+            margin-top:50px;
+        }
+        .repImgDiv{
+            margin-right:15px;
+            height:auto;
+            width:50%;
+        }
+        .repImg{
+            width:100%;
+            height:400px;
+        }
+        .wd50{
+            height:auto;
+            width:50%;
+        }
+        .input-group.w-50{
+            text-align: center;
+        }
+        .img-thumbnail {
+          opacity: 0.6;
+        }
+        .active,
+        .img-thumbnail:hover {
+          opacity: 1;
+        }
+    </style>
+</th:block>
+
+<div layout:fragment="content" style="margin-left:10%;margin-right:25%; margin-top:3%; margin-right: 10%;">
+    <input type="hidden" id="itemId" th:value="${item.id}">
+
+    <div class="d-flex">
+        <div class="container">
+            <div class="repImgDiv">
+                <img th:src="${item.itemImgDtoList[0].imgUrl}" class="rounded repImg" id="img2" th:alt="${item.itemNm}">
+            </div>
+        </div>
+        <div class="text-right">
+                <span th:if="${item.itemSellStatus == T(com.shop.constant.ItemSellStatus).SELL}"
+                      class="badge bg-white border border-success rounded text-success mgb-15 p-1">판매중</span>
+            <span th:unless="${item.itemSellStatus == T(com.shop.constant.ItemSellStatus).SELL}"
+                  class="badge bg-danger mgb-15">품절</span>
+            <div class="h4" th:text="${item.itemNm}"></div>
+            <hr class="my-4">
+            <div class="h4 text-success fs-6 text-left">
+                <span th:text="${item.type}"></span>
+            </div>
+            <div class="text-right">
+                <div class="h4 text-danger text-left">
+                    <input type="hidden" th:value="${item.price}" id="price" name="price">
+                    <span th:text="${item.price}"></span>원
+                </div>
+                <div class="input-group w-50">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">수량</span>
+                    </div>
+                    <input type="number" name="count" id="count" class="form-control" value="1" min="1"/>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="text-right mgt-50">
+                <h5>결제 금액</h5>
+                <h3 name="totalPrice" id="totalPrice" class="font-weight-bold"></h3>
+            </div>
+            <div th:if="${item.itemSellStatus == T(com.shop.constant.ItemSellStatus).SELL}"
+                 class="text-right">
+                <button type="button" class="btn btn-outline-success btn-lg"
+                        onclick="addCart()">
+                    장바구니 담기
+                </button>
+                <button type="button" class="btn btn-success btn-lg" onclick="order()">주문하기</button>
+                <button id="btn-kakao-pay" type="button" class="btn btn-primary">카카오페이 결제</button>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div th:unless="${item.itemSellStatus == T(com.shop.constant.ItemSellStatus).SELL}"
+         class="text-right">
+        <button type="button" class="btn btn-danger btn-lg">품절</button>
+    </div>
+    <div class="container">
+        <div class="row" style="margin-right: 30%; margin-left: -30%;">
+            <div th:each="itemImg : ${item.itemImgDtoList}" class="col-md-2">
+                <img th:if="${not #strings.isEmpty(itemImg.imgUrl)}"
+                     class="img-thumbnail" name="targetImg" th:src="${itemImg.imgUrl}" id="showimg"
+                     onclick="clickBtn()">
+            </div>
+        </div>
+    </div>
+    <script th:inline="javascript">
+                let item = new Array();
+                let img = new Object();
+
+                /*[# th:each="img : ${item.itemImgDtoList}"]*/
+                img = /*[[${img.imgUrl}]]*/;
+                item.push(img);
+                /*[/]*/
+
+
+<!--        itemList.forEach(function(temp){-->
+<!--            img =  temp.imgUrl;-->
+<!--            console.log(img);-->
+<!--            item.push(img);-->
+<!--        });-->
+
+            function clickBtn(){
+                let slides = document.getElementsByClassName("img-thumbnail");
+                const boxs = document.querySelectorAll(".col-md-2 > img");
+                boxs.forEach((el, index) => {
+                    el.onclick = () => { // 해당 인덱스 버튼 누를시 이벤트 발생 반복문
+                        let dots = document.getElementsByClassName("img-thumbnail");
+                         for (i = 0; i < dots.length; i++) {
+                            dots[i].className = dots[i].className.replace(" active", "");
+                          }
+                        if(index == 0){
+                            document.getElementById("img2").src = item[0];
+                        }
+                        else if(index == 1){
+                            document.getElementById("img2").src = item[1];
+                        }
+                        else if(index == 2){
+                            document.getElementById("img2").src = item[2];
+                        }
+                        else if(index == 3){
+                            document.getElementById("img2").src = item[3];
+                        }
+                        else if(index == 4){
+                            document.getElementById("img2").src = item[4];
+                        }
+                        else{
+                            alert("예외");
+                        }
+                            dots[index].className += " active";
+
+                    }
+                });
+            }
+    </script>
+    <div class="col-md-auto">
+        <div class="border bg-body-secondary border-success-subtle rounded-4 p-2 mgt-30 mgb-15"
+             style="text-align: center;">
+            <div class="container" style="text-align: center;">
+                <h4 class="display-5">상품 상세 설명</h4>
+                <hr class="my-4">
+                <p class="lead" th:text="${item.itemDetail}"></p>
+            </div>
+        </div>
+    </div>
+</div>
+</html>

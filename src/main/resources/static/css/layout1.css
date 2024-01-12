@@ -1,0 +1,10 @@
+.active>.page-link {
+    background-color: #6B8E23;
+    border-color: #6B8E23;
+}
+.defaultText > a, .defaultText > span {
+    color: black;
+}
+.fa-solid.fa-user.p-2 {
+    font-size: 20px;
+}
